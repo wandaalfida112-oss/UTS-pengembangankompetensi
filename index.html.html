@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UTS Online</title>
+<style>
+:root{--bg:#eaf0f5;--kartu:#fff;--ink:#17232f;--mut:#566676;--ac:#1d6b87;--ac2:#e1f0f5;--ok:#2b7a57;--bad:#b3261e;--gar:#c9d5df}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,"Segoe UI",Roboto,sans-serif}
+[hidden]{display:none!important}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 90px}
+.kartu{background:var(--kartu);border:1px solid var(--gar);border-radius:10px;padding:24px}
+h1{font-size:1.7rem;margin:0 0 6px}h2{font-size:1.35rem;margin:0 0 12px}
+input[type=text]{width:100%;padding:12px;font:inherit;border:1px solid var(--gar);border-radius:8px;margin:4px 0 14px}
+button{font:inherit;cursor:pointer;border:1px solid var(--ac);background:var(--ac);color:#fff;border-radius:8px;padding:10px 18px}
+button.sek{background:#fff;color:var(--ac)}button:disabled{opacity:.4;cursor:default}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid #7fb8cc;outline-offset:2px}
+ul.pet li{margin:4px 0}
+#bar{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
+#timer{font:700 1.4rem ui-monospace,Consolas,monospace;cursor:default;user-select:none}
+#timer.kritis{color:#ff8a80}
+#simpan{font-size:.85rem;color:#a9c4d3}
+#navNo{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+#navNo button{width:44px;height:44px;padding:0;background:#fff;color:var(--ink);border-color:var(--gar)}
+#navNo button.sebagian{background:#fff3c9;border-color:#d9b53a}
+#navNo button.penuh{background:#cfe9db;border-color:var(--ok)}
+#navNo button.skrg{outline:3px solid var(--ac)}
+.kasus{background:var(--ac2);border-left:5px solid var(--ac);padding:14px 18px;border-radius:6px;margin-bottom:20px;font-family:Georgia,"Times New Roman",serif;font-size:1.1rem;line-height:1.7}
+.sub{display:block;font-family:Georgia,serif;font-size:1.1rem;margin:18px 0 6px;font-weight:600}
+textarea{width:100%;min-height:170px;padding:12px;font:inherit;border:1px solid var(--gar);border-radius:8px;resize:vertical}
+.cnt{font-size:.85rem;color:var(--mut);text-align:right}
+#aksi{display:flex;justify-content:space-between;gap:10px;margin-top:22px}
+#pengawas{display:flex;gap:8px;align-items:center}#pengawas input{margin:0;width:170px;padding:6px}
+#alarm,#modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;z-index:99}
+#alarm{background:#b3121b;color:#fff;z-index:100}#alarm h1{font-size:2.6rem}
+#alarm button{background:#fff;color:#b3121b;font-size:1.2rem;font-weight:700;margin-top:18px}
+#modal{background:rgba(10,20,30,.6)}#modal .kartu{max-width:520px;text-align:left}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap" id="awal">
+  <div class="kartu">
+    <h1 id="judul"></h1>
+    <p>Isi identitas, baca petunjuk, lalu tekan tombol mulai.</p>
+    <label for="nama">Nama lengkap</label><input type="text" id="nama" autocomplete="off">
+    <label for="nim">NIM</label><input type="text" id="nim" autocomplete="off">
+    <h2>Petunjuk ujian</h2>
+    <ul class="pet" id="petunjuk"></ul>
+    <p id="infoLanjut" class="bad" hidden></p>
+    <button id="btnMulai">Mulai Ujian</button>
+  </div>
+</div>
+
+<div id="ujian" hidden>
+  <div id="bar">
+    <strong id="identitas"></strong>
+    <span id="simpan">Tersimpan otomatis</span>
+    <span id="pengawas" hidden><input type="text" id="kodePengawas" placeholder="Kode pengawas"><button class="sek" id="btnKode">OK</button></span>
+    <span id="timer" title="">--:--</span>
+  </div>
+  <div class="wrap">
+    <div id="navNo"></div>
+    <div class="kartu" id="isiSoal"></div>
+    <div id="aksi">
+      <button class="sek" id="btnPrev">Sebelumnya</button>
+      <button id="btnNext">Berikutnya</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="selesai" hidden>
+  <div class="kartu">
+    <h1 class="ok">Jawaban berhasil dikumpulkan</h1>
+    <p id="ringkas"></p>
+    <h2>Catatan pelanggaran</h2>
+    <ul id="daftarLog"></ul>
+    <p id="status"></p>
+    <button class="sek" id="btnUlang" hidden>Kirim ulang</button>
+    <button class="sek" id="btnJson">Unduh jawaban (JSON)</button>
+    <button class="sek" id="btnTxt">Unduh jawaban (TXT)</button>
+  </div>
+</div>
+
+<div id="alarm" hidden>
+  <div><h1>⚠ PERINGATAN PELANGGARAN</h1><p id="alarmTeks" style="font-size:1.4rem"></p>
+  <button id="btnKembali">Saya kembali ke ujian</button></div>
+</div>
+<div id="modal" hidden><div class="kartu"><h2>Kumpulkan jawaban?</h2><p id="modalTeks"></p>
+  <button class="sek" id="btnBatal">Kembali mengerjakan</button> <button id="btnYa">Kumpulkan sekarang</button></div></div>
+
+<script>
+/* ================= KONFIGURASI ================= */
+const NAMA_UJIAN = "Ujian Tengah Semester (UTS) – Kompetensi";
+const DURASI_MENIT = 100;          // durasi ujian
+const BATAS_PELANGGARAN = 3;       // batas pelanggaran sebelum otomatis dikumpulkan
+const URL_APPS_SCRIPT = "";        // isi setelah deploy Google Apps Script
+const KODE_PENGAWAS = "PENGAWAS-UTS"; // kode tambahan waktu (ganti!). Munculkan kolomnya: klik timer 3x
+const TAMBAH_MENIT = 10;           // menit yang ditambahkan per kode
+const KEY = "uts_state_v1";
+
+/* ================= DATA SOAL (ganti di sini) ================= */
+const DATA_SOAL = [
+ {nomor:1, kasus:null, subPertanyaan:[
+  {id:"1", teks:"Jelaskan perbedaan antara competency dictionary dan competency model."}]},
+ {nomor:2, kasus:"Seorang mahasiswa memiliki kemampuan membuat presentasi yang baik, tetapi sering menunda tugas dan tidak percaya diri saat berbicara di depan kelas. Berdasarkan teori komponen kompetensi, jelaskan:", subPertanyaan:[
+  {id:"2a", teks:"Komponen kompetensi apa saja yang dimiliki dan yang masih perlu dikembangkan oleh mahasiswa tersebut?"},
+  {id:"2b", teks:"Mengapa pengetahuan dan keterampilan saja tidak cukup untuk menunjukkan kompetensi?"}]},
+ {nomor:3, kasus:"Tim HR sebuah sekolah ingin membuat model kompetensi untuk posisi guru. Mereka sudah melakukan wawancara dengan beberapa guru berprestasi.", subPertanyaan:[
+  {id:"3a", teks:"Sebutkan dua langkah awal dalam menyusun model kompetensi berdasarkan data yang telah dikumpulkan."},
+  {id:"3b", teks:"Mengapa penting untuk menuliskan indikator perilaku yang jelas dan spesifik dalam model kompetensi?"}]},
+ {nomor:4, kasus:"Seorang HR officer sedang melakukan wawancara untuk menilai kompetensi \"adaptability\" pada calon karyawan. Ia ingin menggunakan pendekatan Behavioral Event Interview (BEI) agar hasil wawancara lebih akurat.", subPertanyaan:[
+  {id:"4a", teks:"Tuliskan satu contoh pertanyaan BEI yang dapat digunakan untuk menilai kompetensi \"adaptability\"."},
+  {id:"4b", teks:"Jelaskan mengapa pertanyaan ini efektif untuk menilai kompetensi \"adaptability\"."}]},
+ {nomor:5, kasus:"Sebuah organisasi kemahasiswaan mengalami kesulitan dalam menyelesaikan proyek sosial tepat waktu. Beberapa anggota aktif, tetapi tidak memahami standar kerja yang diharapkan, dan sering terjadi miskomunikasi dalam tim.", subPertanyaan:[
+  {id:"5a", teks:"Jelaskan dua peran penting kompetensi dalam membantu organisasi kemahasiswaan mencapai tujuannya."},
+  {id:"5b", teks:"Berikan satu contoh kompetensi yang relevan untuk meningkatkan efektivitas kerja tim dalam organisasi kemahasiswaan, dan jelaskan bagaimana kompetensi tersebut dapat diterapkan."}]}
+];
+
+/* ================= STATE ================= */
+const $ = id => document.getElementById(id);
+const SEMUA_ID = DATA_SOAL.flatMap(s => s.subPertanyaan.map(p => p.id));
+let S = null, idx = 0, aktif = false, overlayOn = false, grace = 0, lastV = 0;
+let audio = null, osc = null, sirenT = null, lastLen = {}, saveT = null, klikTimer = 0;
+const jam = () => new Date().toLocaleTimeString("id-ID");
+
+function simpan() { try { localStorage.setItem(KEY, JSON.stringify(S)); $("simpan").textContent = "Tersimpan otomatis " + jam(); } catch (e) { $("simpan").textContent = "Gagal menyimpan lokal!"; } }
+function catat(j) { S.log.push({w: jam(), j}); simpan(); }
+const akhir = () => S.mulai + (DURASI_MENIT + S.tambah) * 60000;
+const terisi = id => (S.jaw[id] || "").trim().length > 0;
+
+/* ================= HALAMAN AWAL ================= */
+$("judul").textContent = NAMA_UJIAN;
+$("petunjuk").innerHTML = `
+ <li>Durasi ujian: <b>${DURASI_MENIT} menit</b>. Timer tetap berjalan walau halaman di-refresh.</li>
+ <li>Jumlah soal: <b>${DATA_SOAL.length}</b> (${SEMUA_ID.length} kolom jawaban), berupa esai/studi kasus.</li>
+ <li>Batas pelanggaran: <b>${BATAS_PELANGGARAN} kali</b>. Setelah itu jawaban dikumpulkan otomatis dan ujian dikunci.</li>
+ <li>Pelanggaran: pindah tab/jendela, keluar fullscreen, copy, cut, paste, klik kanan, F12, Ctrl+U/P/S, PrintScreen.</li>
+ <li>Jawaban tersimpan otomatis. Tekan <b>Mulai Ujian</b> untuk masuk layar penuh.</li>`;
+try { S = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { S = null; }
+if (S && S.selesai) { tampilSelesai(); }
+else if (S) { $("nama").value = S.nama; $("nim").value = S.nim; $("nama").disabled = $("nim").disabled = true;
+  $("btnMulai").textContent = "Lanjutkan Ujian"; $("infoLanjut").hidden = false;
+  $("infoLanjut").textContent = "Ujian yang sedang berjalan ditemukan. Waktu tetap berjalan sejak mulai."; }
+
+$("btnMulai").onclick = () => {
+  const nama = $("nama").value.trim(), nim = $("nim").value.trim();
+  if (!nama || !nim) { alert("Nama dan NIM wajib diisi."); return; }
+  // Membuka kunci audio (harus dari klik pengguna)
+  try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (e) {}
+  masukFullscreen();
+  if (!S) { S = {nama, nim, mulai: Date.now(), tambah: 0, jaw: {}, log: [], pel: 0, selesai: 0}; simpan(); }
+  else catat("Halaman dimuat ulang / ujian dilanjutkan (catatan, bukan pelanggaran)");
+  $("awal").hidden = true; $("ujian").hidden = false;
+  $("identitas").textContent = S.nama + " – " + S.nim;
+  aktif = true; grace = Date.now() + 2000; render(); tick();
+};
+function masukFullscreen() { const e = document.documentElement; if (e.requestFullscreen) e.requestFullscreen().catch(() => {}); }
+
+/* ================= TIMER ================= */
+function tick() {
+  if (!aktif) return;
+  const sisa = akhir() - Date.now();
+  if (sisa <= 0) { kumpulkan("Waktu habis"); return; }
+  const m = Math.floor(sisa / 60000), d = Math.floor(sisa % 60000 / 1000);
+  $("timer").textContent = String(m).padStart(2, "0") + ":" + String(d).padStart(2, "0");
+  $("timer").classList.toggle("kritis", sisa < 300000);
+  setTimeout(tick, 500);
+}
+setInterval(() => { if (aktif) simpan(); }, 5000); // autosave berkala
+// Kolom kode pengawas: klik timer 3x
+$("timer").onclick = () => { clearTimeout(klikTimer); $("timer").dataset.k = (+$("timer").dataset.k || 0) + 1;
+  if ($("timer").dataset.k >= 3) { $("pengawas").hidden = false; $("timer").dataset.k = 0; }
+  klikTimer = setTimeout(() => $("timer").dataset.k = 0, 1200); };
+$("btnKode").onclick = () => {
+  if ($("kodePengawas").value === KODE_PENGAWAS) { S.tambah += TAMBAH_MENIT; catat("Tambahan waktu +" + TAMBAH_MENIT + " menit oleh pengawas"); alert("Waktu ditambah " + TAMBAH_MENIT + " menit."); }
+  else alert("Kode salah.");
+  $("kodePengawas").value = ""; $("pengawas").hidden = true;
+};
+
+/* ================= RENDER SOAL ================= */
+function status(s) { const n = s.subPertanyaan.filter(p => terisi(p.id)).length; return n === 0 ? "" : n === s.subPertanyaan.length ? "penuh" : "sebagian"; }
+function render() {
+  const s = DATA_SOAL[idx];
+  let h = `<h2>Soal ${s.nomor}</h2>`;
+  if (s.kasus) h += `<div class="kasus"><b>Kasus:</b> ${s.kasus}</div>`;
+  s.subPertanyaan.forEach(p => {
+    const lbl = p.id.length > 1 ? p.id + ". " : "";
+    h += `<label class="sub" for="t${p.id}">${lbl}${p.teks}</label>
+      <textarea id="t${p.id}" data-id="${p.id}" spellcheck="false" placeholder="Ketik jawaban Anda di sini..."></textarea>
+      <div class="cnt" id="c${p.id}"></div>`;
+  });
+  $("isiSoal").innerHTML = h;
+  s.subPertanyaan.forEach(p => { const t = $("t" + p.id); t.value = S.jaw[p.id] || ""; lastLen[p.id] = t.value.length; hitung(p.id); });
+  $("navNo").innerHTML = DATA_SOAL.map((x, i) => `<button class="${status(x)} ${i === idx ? "skrg" : ""}" data-i="${i}" aria-label="Soal ${x.nomor}">${x.nomor}</button>`).join("");
+  $("btnPrev").disabled = idx === 0;
+  $("btnNext").textContent = idx === DATA_SOAL.length - 1 ? "Kumpulkan Jawaban" : "Berikutnya";
+}
+function hitung(id) { const v = $("t" + id).value.trim(); $("c" + id).textContent = (v ? v.split(/\s+/).length : 0) + " kata · " + $("t" + id).value.length + " karakter"; }
+$("navNo").onclick = e => { const b = e.target.closest("button"); if (b) { idx = +b.dataset.i; render(); } };
+$("btnPrev").onclick = () => { idx--; render(); };
+$("btnNext").onclick = () => { if (idx < DATA_SOAL.length - 1) { idx++; render(); } else konfirmasi(); };
+
+// Input textarea: simpan (debounce) + deteksi lonjakan karakter
+$("isiSoal").addEventListener("input", e => {
+  const t = e.target; if (!t.dataset.id) return;
+  const id = t.dataset.id, delta = t.value.length - (lastLen[id] || 0);
+  if (delta > 60) catat(`Input mencurigakan: +${delta} karakter sekaligus di jawaban ${id}`); // hanya catatan
+  lastLen[id] = t.value.length; S.jaw[id] = t.value; hitung(id);
+  $("simpan").textContent = "Menyimpan...";
+  clearTimeout(saveT); saveT = setTimeout(() => { simpan(); render_nav(); }, 600);
+});
+function render_nav() { document.querySelectorAll("#navNo button").forEach((b, i) => b.className = status(DATA_SOAL[i]) + (i === idx ? " skrg" : "")); }
+
+/* ================= KONFIRMASI ================= */
+function konfirmasi() {
+  const kosong = SEMUA_ID.filter(id => !terisi(id));
+  $("modalTeks").innerHTML = kosong.length ? `Kolom jawaban yang masih <b class="bad">kosong</b>: <b>${kosong.join(", ")}</b>.` : `<span class="ok">Semua kolom jawaban sudah terisi.</span>`;
+  $("modalTeks").innerHTML += "<br>Setelah dikumpulkan, jawaban tidak dapat diubah.";
+  $("modal").hidden = false;
+}
+$("btnBatal").onclick = () => $("modal").hidden = true;
+$("btnYa").onclick = () => { $("modal").hidden = true; kumpulkan("Dikumpulkan oleh mahasiswa"); };
+
+/* ================= ANTI-CURANG ================= */
+function langgar(jenis, fokus) {
+  if (!aktif || S.selesai) return;
+  if (fokus && (overlayOn || Date.now() < grace)) return;          // hindari hitung ganda (blur+fullscreen+tab)
+  if (!fokus && Date.now() - lastV < 600) return;
+  lastV = Date.now(); S.pel++; catat("PELANGGARAN " + S.pel + ": " + jenis);
+  if (S.pel >= BATAS_PELANGGARAN) { kumpulkan("Batas pelanggaran tercapai"); return; }
+  $("alarmTeks").textContent = `${jenis}. Pelanggaran ke-${S.pel} dari ${BATAS_PELANGGARAN}. Ujian dikumpulkan otomatis jika mencapai batas.`;
+  $("alarm").hidden = false; overlayOn = true; sirenMulai();
+}
+$("btnKembali").onclick = () => { sirenStop(); $("alarm").hidden = true; overlayOn = false; grace = Date.now() + 1500; masukFullscreen(); };
+document.addEventListener("visibilitychange", () => { if (document.hidden) langgar("Pindah tab / jendela disembunyikan", true); });
+window.addEventListener("blur", () => langgar("Jendela kehilangan fokus", true));
+document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) langgar("Keluar dari layar penuh", true); });
+["copy", "cut", "paste"].forEach(n => document.addEventListener(n, e => { if (!aktif) return; e.preventDefault(); langgar("Percobaan " + n.toUpperCase()); }));
+document.addEventListener("drop", e => { if (!aktif) return; e.preventDefault(); langgar("Drag-drop teks ke kolom jawaban"); });
+document.addEventListener("dragover", e => { if (aktif) e.preventDefault(); });
+document.addEventListener("contextmenu", e => { if (!aktif) return; e.preventDefault(); langgar("Klik kanan"); });
+document.addEventListener("keydown", e => {   // hanya pintasan terlarang; mengetik biasa tidak diblokir
+  if (!aktif) return; const k = e.key.toLowerCase(), c = e.ctrlKey || e.metaKey;
+  if (e.key === "F12" || (c && ["u", "p", "s"].includes(k)) || (c && e.shiftKey && ["i", "j", "c"].includes(k))) {
+    e.preventDefault(); langgar("Pintasan terlarang: " + (e.key === "F12" ? "F12" : (c ? "Ctrl+" : "") + (e.shiftKey ? "Shift+" : "") + k.toUpperCase())); }
+});
+document.addEventListener("keyup", e => { if (aktif && e.key === "PrintScreen") { try { navigator.clipboard.writeText(""); } catch (x) {} langgar("PrintScreen"); } });
+window.addEventListener("beforeunload", e => { if (aktif) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ================= ALARM SIRINE (Web Audio) ================= */
+function sirenMulai() {
+  if (!audio) return; audio.resume();
+  osc = audio.createOscillator(); const g = audio.createGain(); g.gain.value = 0.6;
+  osc.type = "sawtooth"; osc.connect(g); g.connect(audio.destination); osc.start();
+  let naik = true;
+  const f = () => { const t = audio.currentTime; osc.frequency.cancelScheduledValues(t);
+    osc.frequency.setValueAtTime(naik ? 600 : 1100, t); osc.frequency.linearRampToValueAtTime(naik ? 1100 : 600, t + 0.5); naik = !naik; };
+  f(); sirenT = setInterval(f, 500);
+}
+function sirenStop() { clearInterval(sirenT); try { osc && osc.stop(); } catch (e) {} osc = null; }
+
+/* ================= PENGUMPULAN & PENGIRIMAN ================= */
+function kumpulkan(alasan) {
+  if (S.selesai) return;
+  S.selesai = Date.now(); S.alasan = alasan; simpan();
+  aktif = false; sirenStop(); overlayOn = false; $("alarm").hidden = true; $("modal").hidden = true;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  tampilSelesai(); kirim();
+}
+function tampilSelesai() {
+  $("awal").hidden = true; $("ujian").hidden = true; $("selesai").hidden = false;
+  const n = SEMUA_ID.filter(terisi).length;
+  $("ringkas").textContent = `Terima kasih, ${S.nama} (${S.nim}). ${n} dari ${SEMUA_ID.length} kolom jawaban terisi. Alasan: ${S.alasan}.`;
+  const pel = S.log.filter(l => l.j.startsWith("PELANGGARAN"));
+  $("daftarLog").innerHTML = pel.length ? pel.map(l => `<li>${l.w} – ${l.j}</li>`).join("") : "<li>Tidak ada pelanggaran.</li>";
+  if (!S.terkirim && !$("status").textContent) kirim();
+}
+function payload() {
+  return {nama: S.nama, nim: S.nim, mulai: new Date(S.mulai).toISOString(), selesai: new Date(S.selesai).toISOString(),
+    durasiMenit: Math.round((S.selesai - S.mulai) / 6000) / 10, alasan: S.alasan, jumlahPelanggaran: S.pel,
+    tambahWaktuMenit: S.tambah, log: S.log.map(l => l.w + " | " + l.j).join("\n"), jawaban: S.jaw};
+}
+async function kirim() {
+  const st = $("status"); $("btnUlang").hidden = true;
+  if (S.terkirim) { st.textContent = "Jawaban sudah terkirim ke server."; return; }
+  if (!URL_APPS_SCRIPT) { st.textContent = "URL server belum diatur. Unduh jawaban dan serahkan ke pengawas."; $("btnUlang").hidden = false; return; }
+  for (let i = 1; i <= 4; i++) {   // coba ulang otomatis
+    try {
+      st.textContent = "Mengirim jawaban... (percobaan " + i + ")";
+      await fetch(URL_APPS_SCRIPT, {method: "POST", mode: "no-cors", headers: {"Content-Type": "text/plain;charset=utf-8"}, body: JSON.stringify(payload())});
+      S.terkirim = true; simpan(); st.textContent = "Jawaban terkirim ke server."; return;
+    } catch (e) { await new Promise(r => setTimeout(r, 2000 * i)); }
+  }
+  st.textContent = "Pengiriman gagal. Unduh jawaban di bawah dan serahkan ke pengawas."; $("btnUlang").hidden = false;
+}
+$("btnUlang").onclick = kirim;
+function unduh(isi, nama, tipe) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([isi], {type: tipe})); a.download = nama; a.click(); }
+$("btnJson").onclick = () => unduh(JSON.stringify(payload(), null, 2), `jawaban_${S.nim}.json`, "application/json");
+$("btnTxt").onclick = () => { const p = payload(); let t = `Nama: ${p.nama}\nNIM: ${p.nim}\nMulai: ${p.mulai}\nSelesai: ${p.selesai}\nPelanggaran: ${p.jumlahPelanggaran}\n\n`;
+  DATA_SOAL.forEach(s => s.subPertanyaan.forEach(q => t += `[${q.id}] ${q.teks}\n${p.jawaban[q.id] || "(kosong)"}\n\n`)); t += "LOG:\n" + p.log; unduh(t, `jawaban_${S.nim}.txt`, "text/plain"); };
+</script>
+</body>
+</html>
